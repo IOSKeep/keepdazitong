@@ -4,6 +4,7 @@
 USING_NS_CC;
 static int dif=1;
 static int num;
+//test
 Scene* HelloWorld::createScene()
 {
     // 'scene' is an autorelease object
