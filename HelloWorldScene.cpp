@@ -1,4 +1,5 @@
 #include "HelloWorldScene.h"
+#include "ui/cocosGUI.h"
 
 USING_NS_CC;
 
@@ -30,55 +31,19 @@ bool HelloWorld::init()
     Size visibleSize = Director::getInstance()->getVisibleSize();
     Vec2 origin = Director::getInstance()->getVisibleOrigin();
 
-    /////////////////////////////
-    // 2. add a menu item with "X" image, which is clicked to quit the program
-    //    you may modify it.
 
-//    // add a "close" icon to exit the progress. it's an autorelease object
-//    auto closeItem = MenuItemImage::create(
-//                                           "CloseNormal.png",
-//                                           "CloseSelected.png",
-//                                           CC_CALLBACK_1(HelloWorld::menuCloseCallback, this));
-//    
-//	closeItem->setPosition(Vec2(origin.x + visibleSize.width - closeItem->getContentSize().width/2 ,
-//                                origin.y + closeItem->getContentSize().height/2));
-//
-//    // create menu, it's an autorelease object
-//    auto menu = Menu::create(closeItem, NULL);
-//    menu->setPosition(Vec2::ZERO);
-//    this->addChild(menu, 1);
-//
-    /////////////////////////////
-    // 3. add your codes below...
-
-    // add a label shows "Hello World"
-    // create and initialize a label
-//    
-//    auto label = Label::createWithTTF("Hello World", "fonts/Marker Felt.ttf", 24);
-//    
-//    
-//    // position the label on the center of the screen
-//    label->setPosition(Vec2(origin.x + visibleSize.width/2,
-//                            origin.y + visibleSize.height - label->getContentSize().height));
-//
-//    // add the label as a child to this layer
-//    this->addChild(label, 1);
-//
-//    // add "HelloWorld" splash screen"
-//    auto sprite = Sprite::create("HelloWorld.png");
-//
-//
-//    // position the sprite on the center of the screen
-//    sprite->setPosition(Vec2(visibleSize.width/2 + origin.x, visibleSize.height/2 + origin.y));
-//
-//    // add the sprite as a child to this layer
-//    this->addChild(sprite, 0);
     
     //设置背景
     setBackground();
     
-    //设置难度 主要控制下落的速度
+    //统计结果
+    countCorrentPersent();
     
+    
+    //初始化结果
+    amountChar = 0;
+    correctChar = 0;
+    //设置难度 主要控制下落的速度
     setDifficulty();
     
     
@@ -101,10 +66,6 @@ bool HelloWorld::init()
     
     
     //控制键盘监听
-
-    //ch[256] ={0};ewq
-    //char ch[256]; ch[(int)q] = 1;
-    //ch[(int)t] = 0;
     auto listener = EventListenerKeyboard::create();
     listener->onKeyPressed = [this](EventKeyboard::KeyCode keyCode, Event* e){
         //拿到输入的键值
@@ -126,17 +87,40 @@ bool HelloWorld::init()
         
         for(std::deque<Label* >::iterator it = dequeLabel.begin(); it != dequeLabel.end(); it++)
         {
-            std::string tmpStr = (*it)->getString();
-            char tmpCh = tmpStr[0];
-            if(tmpCh == ch)
+            if((*it)->getColor() != Color3B::GREEN)
             {
-                (*it)->setColor(Color3B::GREEN);
+                std::string tmpStr = (*it)->getString();
+                char tmpCh = tmpStr[0];
+                if(tmpCh == ch)
+                {
+                    //正确把字体设置为绿色
+                    (*it)->setColor(Color3B::GREEN);
+                    
+                    
+                    //添加粒子效果
+                    auto position = (*it)->getPosition();
+                    auto rightParticle = ParticleSystemQuad::create("right.plist");
+                    rightParticle->setPositionType(ParticleSystem::PositionType::FREE);
+                    rightParticle->setPosition(position);
+                    rightParticle->setAutoRemoveOnFinish(true);
+                    this->addChild(rightParticle);
+                    
+                    //正确的数量加一
+                    correctChar++;
+                    
+                }
+
             }
+            
         }
   
     };
     auto dispather = Director::getInstance()->getEventDispatcher();
     dispather->addEventListenerWithSceneGraphPriority(listener, this);
+    
+    
+    
+    //
     return true;
 }
 void HelloWorld::update(float delta)
@@ -161,6 +145,21 @@ void HelloWorld::update(float delta)
 }
 void HelloWorld::setBackground()
 {
+    Size visibleSize = Director::getInstance()->getVisibleSize();
+    
+    auto sprite1 = Sprite::create("bgMap5.png");
+    sprite1->setScale(visibleSize.width/sprite1->getContentSize().width, 1);
+    sprite1->setPosition(sprite1->getContentSize().width/2, sprite1->getContentSize().height/2);
+    
+    
+    auto move1 = MoveTo::create(10, Vec2(sprite1->getContentSize().width/2,
+                                         -(sprite1->getContentSize().height/2 - visibleSize.height)));
+    auto place = Place::create(Vec2(sprite1->getContentSize().width/2,
+                                    sprite1->getContentSize().height/2));
+    this->addChild(sprite1);
+    auto sequence = Sequence::create(move1, place, NULL);
+    auto repeat = RepeatForever::create(sequence);
+    sprite1->runAction(repeat);
     
 }
 void HelloWorld::setDifficulty()
@@ -179,20 +178,23 @@ void HelloWorld::createRandomChar(float delta)
     char* tmpCharArray  = (char* )malloc(36 * sizeof(char));
     memcpy(tmpCharArray, chArray, 36 * sizeof(char));
     int i = 0, j = 0;
-    
-    for(i = 0; i < 36 && j < onScreeCharCount; i++)
+    for(j = 0; j < onScreeCharCount; j++)
     {
-        auto tmpLable = dequeLabel[j];
-        std::string tmpStr = tmpLable->getString();  //
-        char tmpChar = tmpCharArray[i];
-        if(tmpChar == tmpStr[0])
+        for(i = j; i < 36 && j < onScreeCharCount; i++)
         {
-            char tmp = tmpCharArray[i];
-            tmpCharArray[i] = tmpCharArray[j];
-            tmpCharArray[j] = tmp;
-            j++;
+            auto tmpLable = dequeLabel[j];
+            std::string tmpStr = tmpLable->getString();  //
+            char tmpChar = tmpCharArray[i];
+            if(tmpChar == tmpStr[0])
+            {
+                char tmp = tmpCharArray[i];
+                tmpCharArray[i] = tmpCharArray[j];
+                tmpCharArray[j] = tmp;
+                break;
+            }
         }
     }
+    
     //处屏幕上的字母外随机剩下的字母
     int index = clock() % (36 - onScreeCharCount) + onScreeCharCount;
     char ch = tmpCharArray[index];
@@ -225,10 +227,48 @@ void HelloWorld::createRandomChar(float delta)
     //把产生的label加入到一个队列里面
     dequeLabel.push_back(label);
     
+    //产生的字母总数加一
+    amountChar++;
+//    ss.clear();
+//    ss << amountChar;
+//    auto labelCorrent = (Label* )this->getChildByTag(001);
+//    labelCorrent->setTTFConfig(ss.str());
+
+    
+    
 }
 //统计正确率
 void HelloWorld::countCorrentPersent()
 {
+//    auto visibleSize = Director::getInstance()->getVisibleSize();
+//    auto label1= Label::createWithTTF("amount: ", "fonts/arial.ttf", 24);
+//    
+//    
+//    std::stringstream ss;
+//    ss << amountChar;
+//    auto labelAmount = Label::createWithTTF(ss.str(), "fonts/arial.ttf", 24);
+//   // this->addChild(labelAmount, 0, 001);
+//    
+//    auto label2 = Label::createWithTTF("corrent: ","fonts/arial.ttf", 24);
+//    
+//    ss.clear();
+//    auto correntLabel = Label::createWithTTF(ss.str(), "fonts/arial.ttf", 24);
+//    
+//    auto hbox = ui::HBox::create(Size(600, 400));
+//;
+//    label1->setPosition(hbox->getPosition().x+ label1->getContentSize().width/2,
+//                        hbox->getPosition().y + label1->getContentSize().height/2);
+//    labelAmount->setPosition(label1->getPosition().x + label1->getContentSize().width/2,
+//                             label1->getPosition().y + label1->getContentSize().height/2);
+//    hbox->addChild(label1);
+//    hbox->addChild(labelAmount);
+//    hbox->addChild(label2);
+//    hbox->addChild(correntLabel);
+    
+//    
+//    hbox->setPosition(Vec2(visibleSize.width/2, visibleSize.height/2));
+//    this->addChild(hbox);
+    
     
 }
 
