@@ -80,15 +80,154 @@ bool HelloWorld::init()
     //设置难度 主要控制下落的速度
     
     setDifficulty();
+    
+    
+    
+    //所有定时器
+    
+    
+    //下落字母定时器
+    
+    this->schedule(CC_SCHEDULE_SELECTOR(HelloWorld::createRandomChar), 0.5);
+    
+    this->scheduleUpdate();
+    
+    
+    //初始化字母表            q,    w
+    chArray  = new char[36]{'0', '1', '2', '3','4',  '5', '6', '7', '8', '9',
+        'A' , 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K',
+        'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'
+        };
+    
+    
+    //控制键盘监听
+
+    //ch[256] ={0};ewq
+    //char ch[256]; ch[(int)q] = 1;
+    //ch[(int)t] = 0;
+    auto listener = EventListenerKeyboard::create();
+    listener->onKeyPressed = [this](EventKeyboard::KeyCode keyCode, Event* e){
+        //拿到输入的键值
+        int keyCodeInt = (int)keyCode;
+        char ch;
+        CCLOG("%d", keyCodeInt);
+        if(keyCodeInt >= 76 && keyCodeInt <= 85)
+        {
+            ch = this->chArray[keyCodeInt-76];
+        }
+        else if(keyCodeInt >= 124 && keyCodeInt <= 149)
+        {
+            ch = this->chArray[keyCodeInt-124 + 10];
+        }
+        else
+        {
+            return;
+        }
+        
+        for(std::deque<Label* >::iterator it = dequeLabel.begin(); it != dequeLabel.end(); it++)
+        {
+            std::string tmpStr = (*it)->getString();
+            char tmpCh = tmpStr[0];
+            if(tmpCh == ch)
+            {
+                (*it)->setColor(Color3B::GREEN);
+            }
+        }
+  
+    };
+    auto dispather = Director::getInstance()->getEventDispatcher();
+    dispather->addEventListenerWithSceneGraphPriority(listener, this);
     return true;
 }
- //随机位置下落随机生成字符
-void HelloWorld::createRandomChar()
+void HelloWorld::update(float delta)
+{
+    
+    //清除不在屏幕上的字母
+   while(!dequeLabel.empty())
+   {
+       Label* label = dequeLabel.front();
+       if(label->getPosition().y == (-label->getContentSize().height/2))
+       {
+           //如果它的位置到达了目的点就移除它
+           Label* tmpLabel = dequeLabel.front();
+           dequeLabel.pop_front();
+           this->removeChild(tmpLabel);
+       }
+       else
+       {
+           break;
+       }
+   }
+}
+void HelloWorld::setBackground()
 {
     
 }
+void HelloWorld::setDifficulty()
+{
+    
+}
+ //随机位置下落随机生成字符
+//76 - 85
+//124 - 149
+void HelloWorld::createRandomChar(float delta)
+{
+    
+    
+    //得到屏幕上的字母数量
+    int onScreeCharCount = dequeLabel.size();
+    char* tmpCharArray  = (char* )malloc(36 * sizeof(char));
+    memcpy(tmpCharArray, chArray, 36 * sizeof(char));
+    int i = 0, j = 0;
+    
+    for(i = 0; i < 36 && j < onScreeCharCount; i++)
+    {
+        auto tmpLable = dequeLabel[j];
+        std::string tmpStr = tmpLable->getString();  //
+        char tmpChar = tmpCharArray[i];
+        if(tmpChar == tmpStr[0])
+        {
+            char tmp = tmpCharArray[i];
+            tmpCharArray[i] = tmpCharArray[j];
+            tmpCharArray[j] = tmp;
+            j++;
+        }
+    }
+    //处屏幕上的字母外随机剩下的字母
+    int index = clock() % (36 - onScreeCharCount) + onScreeCharCount;
+    char ch = tmpCharArray[index];
+    
+    free(tmpCharArray);
+    
+    std::stringstream ss;
+    
+    ss << ch;
+    std::string str = ss.str();
+    
+    Size visibleSize = Director::getInstance()->getVisibleSize();
+    
+    
+    auto label = Label::createWithTTF(str, "fonts/Marker Felt.ttf", 32);
+    
+    //一行字母可放的最多数量
+    int labelCount = visibleSize.width / label->getContentSize().width;
+    
+    //一行的随机位置
+    srand((unsigned int)time(NULL));
+    int randomX = (rand() % labelCount) * label->getContentSize().width + label->getContentSize().width/2;
+    
+    
+    label->setPosition(randomX , visibleSize.height + label->getContentSize().height/2);
+    auto move = MoveTo::create(5, Vec2(randomX, -label->getContentSize().height/2));
+    label->runAction(move);
+    this->addChild(label);
+    
+    //把产生的label加入到一个队列里面
+    dequeLabel.push_back(label);
+    
+}
 //统计正确率
-void countCorrentPersent()
+void HelloWorld::countCorrentPersent()
 {
     
 }
