@@ -33,9 +33,11 @@ public:
     int amountChar;
     //所有正确的字符数
     int correctChar;
+    //正确率
+    int correntPersent;
     
     //统计正确率
-    void countCorrentPersent(); 
+    void countCorrentPersent();
     
     //设置难度 主要控制下落的速度
     void setDifficulty();
